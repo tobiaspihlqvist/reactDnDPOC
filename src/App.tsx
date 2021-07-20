@@ -7,9 +7,7 @@ import { DndProvider } from "react-dnd";
 function App() {
 	return (
 		<div>
-			<DndProvider backend={HTML5Backend}>
 				<Container />
-			</DndProvider>
 		</div>
 	);
 }

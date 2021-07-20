@@ -1,59 +1,83 @@
 // import { Console } from "console";
 import React from "react";
+import { createContext } from "react";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 // import { useDrag } from "react-dnd";
 // import Draggable from "react-draggable";
 import { File } from "./File";
 import { Folder } from "./Folder";
+export const itemTypes = {
+	FOLDER: "folder",
+	ITEM: "item",
+}
+export interface IFolder {
+	id: number, items: any[], name: string, moved: boolean;
+}
+
+export interface IItem {
+	id: number, name: string, moved: boolean
+}
+
+export const ItemContext = createContext({
+	moveItemToFolder: (folderId: number, itemId: number) => {},
+	moveFolderToFolder: (folderToMove: number, folderToMoveToo: number) => {},
+})
 
 export const Container: React.FC = () => {
-	const [activeFolder, setActiveFolder] = React.useState<any>(null);
-	const folders = [
-		{ id: 1, name: "mapp1", items: [] },
-		{ id: 2, name: "mapp2", items: [] },
-	];
-	let items = ["item1", "item2"];
+	const [folders, setFolders] = React.useState<IFolder[]>([
+		{ id: 1, name: "mapp1", items: [], moved: false },
+		{ id: 2, name: "mapp2", items: [], moved: false},]
+	);
+	const [items, setItems] = React.useState<IItem[]>([{id: 100, name: "item1", moved: false},{id: 200, name: "item2", moved: false }]);
 
-	React.useEffect(() => {}, [activeFolder, items]);
+	React.useEffect(() => {
+		console.log(folders, items);
+	}, [folders, items]);
 
-	// const [newIteminNewFolder, setNewIteminNewFolder] =
-	// React.useState<any>(undefined);
-	const addItemToFolder = (item: any) => {
-		if (activeFolder) {
-			console.log(activeFolder);
-			setTimeout(() => {}, 1000);
-			// setNewIteminNewFolder(`${activeFolder}, ${item}`);
-			setActiveFolder(null);
-			items = items.filter((i) => i !== item);
+
+	const moveItemToFolder = (folderId: number, itemId: number) => {
+		if(itemId > 10){
+		const folder = folders.filter(f => f.id === folderId);
+
+		const item = items.filter(f => f.id === itemId);
+		item[0].moved = true;
+		folder[0].items = [...folder[0].items, item[0]];
+		setItems(items.filter(i => i.id !== itemId).concat(item[0]));
+		setFolders(folders.filter(f => f.id !== folderId).concat(folder[0])); return;}
+		const folder = folders.filter(f => f.id === itemId);
+		folder[0].moved = true;
+		const finalDestination = folders.filter(f => f.id === folderId);
+		finalDestination[0].items = [...finalDestination[0].items, folder[0]];
+		
+		setFolders(folders.filter(f => f.id !== folderId).concat(finalDestination[0]));
+
+	}
+		const moveFolderToFolder = (folderToMove: number, folderToMoveToo: number) => {
+			const folder = folders.filter(f => f.id === folderToMove);
+			const finalDestination = folders.filter(f => f.id === folderToMoveToo);
+			finalDestination[0].items = [...finalDestination[0].items, folder[0]];
+			setFolders(folders.filter(f => f.id !== folderToMoveToo).concat(finalDestination[0]));
 		}
-	};
+	
+
 	return (
-		<>
-			{folders.map((f) => {
+		<DndProvider backend={HTML5Backend}>
+			<ItemContext.Provider value = {{moveItemToFolder, moveFolderToFolder}}>
+			{folders.filter(f => f.moved === false).map((f) => {
 				return (
-					// onMouseEnter={() => setActiveFolder(f.name)}
-					// onMouseLeave={() => setActiveFolder(f.name)}
 					<Folder
-						name={f.name}
-						// className="bg-red-200 h8 w-full pb-2 pt-2 mb-1 mt-1"
+						folder={f}
 					>
-						{/* <p className="text-indigo-900	">{f.name}</p> */}
 					</Folder>
 				);
 			})}
-			{items.map((item) => {
+			{items.filter(i => i.moved === false).map((item) => {
 				return (
-					// <Draggable
-					// 	axis="y"
-					// 	onStop={() => addItemToFolder(item)}
-					// 	handle=".handle"
-					// >
-					<File name={item} />
-					// </Draggable>
+					<File item={item} />
 				);
 			})}
-			<button onClick={() => alert(items)}>
-				Klicka mig för att se om jag blev tillagd eller ej
-			</button>
-		</>
+</ItemContext.Provider>
+		</DndProvider>
 	);
 };
